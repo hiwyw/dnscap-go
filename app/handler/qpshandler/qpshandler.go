@@ -39,7 +39,7 @@ func (q *QpsHandler) loop() {
 			}
 			q.queryCount++
 		case <-q.ticker.C:
-			logger.Get().Infof("qps %d", q.queryCount/5)
+			logger.Get().Infof("average packet resolve peer second %d", q.queryCount/5)
 			q.queryCount = 0
 		}
 	}

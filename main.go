@@ -15,8 +15,8 @@ var (
 	printVersion bool
 
 	configFile   string
-	buildTime    string = "2023-8-27"
-	buildVersion string = "v0.1.0"
+	buildTime    string = "2023-8-31"
+	buildVersion string = "v0.1.1"
 )
 
 func main() {

@@ -184,7 +184,9 @@ func (a *App) handlePcap() {
 
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	for p := range packetSource.Packets() {
-		a.workerpool.SendTask(p)
+		if err := a.workerpool.SendTask(p); err != nil {
+			logger.Get().Errorf("send task failed %s", err)
+		}
 	}
 }
 
@@ -214,7 +216,9 @@ func (a *App) handleOnePacpFile(filename string) error {
 
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	for p := range packetSource.Packets() {
-		a.workerpool.SendTask(p)
+		if err := a.workerpool.SendTask(p); err != nil {
+			logger.Get().Errorf("send task failed %s", err)
+		}
 	}
 	return nil
 }
@@ -267,7 +271,7 @@ func (a *App) matchSession(dl *dnslog.Dnslog) error {
 
 	v, ok := a.sessionCache.Find(k)
 	if !ok {
-		return fmt.Errorf("match session failed [%s %s %d %d %d]", k.SrcIP, k.DstIP, k.SrcPort, k.DstPort, k.TransID)
+		return fmt.Errorf("match session failed [src:%s dst:%s srcport:%d dstport:%d transid:%d]", k.SrcIP, k.DstIP, k.SrcPort, k.DstPort, k.TransID)
 	}
 
 	if dl.QueryType != v.QueryType || dl.Domain != v.Domain {

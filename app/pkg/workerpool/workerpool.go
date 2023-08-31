@@ -70,7 +70,7 @@ func (pool *WorkerPool) Stop() error {
 	if atomic.CompareAndSwapInt32(&pool.stopped, 0, 1) == false {
 		return ErrWorkerPoolIsStopped
 	}
-	close(pool.taskChan)
+
 	pool.workerGroup.Wait()
 	return nil
 }
