@@ -5,6 +5,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/google/gopacket"
 )
 
 var (
@@ -14,14 +16,12 @@ var (
 
 const SendTaskTimeOut = 3 * time.Second
 
-type Task interface{}
-
-type TaskHandler func(Task)
+type TaskHandler func(gopacket.Packet)
 
 type WorkerPool struct {
 	workerGroup sync.WaitGroup
 	handler     TaskHandler
-	taskChan    chan Task
+	taskChan    chan gopacket.Packet
 	stopped     int32
 }
 
@@ -32,7 +32,7 @@ func NewWorkerPool(handler TaskHandler, workerCount int) *WorkerPool {
 
 	pool := &WorkerPool{
 		handler:  handler,
-		taskChan: make(chan Task),
+		taskChan: make(chan gopacket.Packet),
 	}
 	for i := 0; i < workerCount; i++ {
 		pool.workerGroup.Add(1)
@@ -53,7 +53,7 @@ func (pool *WorkerPool) worker() {
 	pool.workerGroup.Done()
 }
 
-func (pool *WorkerPool) SendTask(t Task) error {
+func (pool *WorkerPool) SendTask(t gopacket.Packet) error {
 	if atomic.LoadInt32(&pool.stopped) == 1 {
 		return ErrWorkerPoolIsStopped
 	}
@@ -71,6 +71,7 @@ func (pool *WorkerPool) Stop() error {
 		return ErrWorkerPoolIsStopped
 	}
 
+	close(pool.taskChan)
 	pool.workerGroup.Wait()
 	return nil
 }

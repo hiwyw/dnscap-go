@@ -35,6 +35,17 @@ func (s *SessionCache) Delete(k SessionKey) {
 	s.cache[k.TransID&(slabNumber-1)].Remove(k)
 }
 
+func (s *SessionCache) FindWithRetry(k SessionKey, retries int) (SessionValue, bool) {
+	for i := 0; i < retries; i++ {
+		v, ok := s.Find(k)
+		if ok {
+			return v, ok
+		}
+		<-time.After(time.Millisecond)
+	}
+	return SessionValue{}, false
+}
+
 func (s *SessionCache) Find(k SessionKey) (SessionValue, bool) {
 	v, ok := s.cache[k.TransID&(slabNumber-1)].Peek(k)
 	if !ok {

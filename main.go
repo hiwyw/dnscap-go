@@ -16,7 +16,7 @@ var (
 
 	configFile   string
 	buildTime    string = "2023-8-31"
-	buildVersion string = "v0.1.1"
+	buildVersion string = "v0.1.2"
 )
 
 func main() {

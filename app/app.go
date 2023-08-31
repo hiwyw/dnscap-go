@@ -39,6 +39,7 @@ func New(cfg *config.Config) *App {
 		sessionCache: session.New(cfg.SessionCacheSize),
 		handlers:     []handler.Handler{},
 		qpsHandler:   qpshandler.New(),
+		closeCh:      make(chan struct{}),
 	}
 
 	if cfg.DnslogEnable {
@@ -81,12 +82,11 @@ type App struct {
 	logHandler   *loghandler.LogHandler
 	qpsHandler   *qpshandler.QpsHandler
 	handlers     []handler.Handler
+	closeCh      chan struct{}
 }
 
-func (a *App) TaskHandleFunc(t workerpool.Task) {
-	p, ok := t.(gopacket.Packet)
-	if !ok {
-		logger.Get().Error("task can not convert to packet object")
+func (a *App) TaskHandleFunc(p gopacket.Packet) {
+	if p == nil {
 		return
 	}
 
@@ -104,7 +104,9 @@ func (a *App) TaskHandleFunc(t workerpool.Task) {
 		a.add2Session(dl)
 	}
 
-	a.logHandler.Handle(dl.String())
+	if a.logHandler != nil {
+		a.logHandler.Handle(dl.String())
+	}
 
 	for _, h := range a.handlers {
 		h.Handle(dl)
@@ -164,8 +166,12 @@ func (a *App) Run() {
 	switch a.cfg.SourceType {
 	case config.SourceTypePcap:
 		a.handlePcap()
+		<-a.closeCh
+		a.closeCh <- struct{}{}
 	case config.SourceTypePcapFile:
 		a.handlePcapFiles()
+		<-a.closeCh
+		a.closeCh <- struct{}{}
 	}
 }
 
@@ -183,9 +189,18 @@ func (a *App) handlePcap() {
 	logger.Get().Infof("set bpf filter succeed [%s]", bpf)
 
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-	for p := range packetSource.Packets() {
-		if err := a.workerpool.SendTask(p); err != nil {
-			logger.Get().Errorf("send task failed %s", err)
+	for {
+		select {
+		case p, ok := <-packetSource.Packets():
+			if !ok {
+				return
+			}
+			if err := a.workerpool.SendTask(p); err != nil {
+				logger.Get().Errorf("send task failed %s", err)
+			}
+		case <-a.closeCh:
+			a.closeCh <- struct{}{}
+			return
 		}
 	}
 }
@@ -215,12 +230,20 @@ func (a *App) handleOnePacpFile(filename string) error {
 	logger.Get().Infof("set bpf filter succeed [%s]", bpf)
 
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-	for p := range packetSource.Packets() {
-		if err := a.workerpool.SendTask(p); err != nil {
-			logger.Get().Errorf("send task failed %s", err)
+	for {
+		select {
+		case p, ok := <-packetSource.Packets():
+			if !ok {
+				return nil
+			}
+			if err := a.workerpool.SendTask(p); err != nil {
+				logger.Get().Errorf("send task failed %s", err)
+			}
+		case <-a.closeCh:
+			a.closeCh <- struct{}{}
+			return nil
 		}
 	}
-	return nil
 }
 
 func getBpfFilterString(ips []net.IP) string {
@@ -269,7 +292,7 @@ func (a *App) matchSession(dl *dnslog.Dnslog) error {
 		TransID: dl.TransID,
 	}
 
-	v, ok := a.sessionCache.Find(k)
+	v, ok := a.sessionCache.FindWithRetry(k, 10)
 	if !ok {
 		return fmt.Errorf("match session failed [src:%s dst:%s srcport:%d dstport:%d transid:%d]", k.SrcIP, k.DstIP, k.SrcPort, k.DstPort, k.TransID)
 	}
@@ -284,11 +307,15 @@ func (a *App) matchSession(dl *dnslog.Dnslog) error {
 }
 
 func (a *App) Stop() {
+	a.closeCh <- struct{}{}
+	<-a.closeCh
 	if err := a.workerpool.Stop(); err != nil {
 		logger.Get().Errorf("stop workerpool failed %s", err)
 	}
 
-	a.logHandler.Stop()
+	if a.logHandler != nil {
+		a.logHandler.Stop()
+	}
 	a.qpsHandler.Stop()
 
 	for _, h := range a.handlers {
