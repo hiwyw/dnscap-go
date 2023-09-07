@@ -1,0 +1,24 @@
+source_type: packet_file # packet_file或packet_capture，分别表示离线抓包文件分析或在线实时抓包分析运行方式
+source_pcap_files: # 需要分析的抓包文件列表，按时间顺序填写配置，仅用于packet_file方式
+  - data.pcap
+source_device_name: en0 # 抓包网卡名称，仅用于packet_capture方式
+filter_ips: [] # 过滤ip列表，用于只分析名单中的ip，通过设置抓包条件实现，为空时分析所有udp 53报文
+output_dir: ./result #
+self_ips: # dns服务器自身ip列表，用于判断报文是客户端侧报文还是服务端自身出向递归报文
+  - 172.31.21.23
+session_cache_size: 100000 # 请求会话缓存大小，底层实现根据transid进行了缓存分区，配置为每个分区缓存的大小，保持默认即可
+dnslog_enable: true # 是否输出dns日志
+dnslog_filename: dns.log # 输出的dns日志文件名称
+dnslog_maxsize: 50 # 输出的dns日志文件大小，单位MB
+dnslog_count: 100 # 输出的dns日志文件最大数量，单位个，超出后会自动轮滚
+dnslog_age: 30 # 输出的日志文件最大保留天数，按照轮滚后的压缩文件名称判断清理
+analyze_enable: true # 是否输出dns统计
+analyzeOutFilename: analyze.log # 输出的dns统计文件名称
+analyze_interval: 5m # dns统计周期，注意统计使用报文中的时间，因此离线文件分析时，请务必保证文件按时间前后进行排列
+analyze_querycount_ips: # 统计特定ip的列表，可输出指定ip的请求、响应数、延时分布信息
+  - 192.168.134.201
+  - 192.168.134.202
+analyze_querycount_domains: # 统计特定域名的列表，可输出指定域名的请求、响应数、延时分布信息
+  - www.test.com.
+pprof_enable: false # 程序性能分析开关，保持默认关闭即可
+pprof_http_port: 8000 # 程序性能分析http服务端口，默认即可

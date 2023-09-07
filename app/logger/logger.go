@@ -46,7 +46,6 @@ func init() {
 	development := zap.Development()
 
 	l = zap.New(core, caller, callSkip, stackTrace, development).Sugar()
-	l.Info("init logger succeed")
 }
 
 func Debug(args ...interface{}) {
