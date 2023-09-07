@@ -3,7 +3,6 @@ module github.com/hiwyw/dnscap-go
 go 1.20
 
 require (
-	github.com/Workiva/go-datastructures v1.1.0
 	github.com/google/gopacket v1.1.19
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/miekg/dns v1.1.55

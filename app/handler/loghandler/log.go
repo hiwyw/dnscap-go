@@ -2,15 +2,21 @@ package loghandler
 
 import (
 	"bufio"
+	"time"
 
+	"github.com/hiwyw/dnscap-go/app/dnslog"
 	"github.com/hiwyw/dnscap-go/app/logger"
 	"github.com/natefinch/lumberjack"
+)
+
+const (
+	batchWriteTimeout = time.Second * 1
 )
 
 type LogHandler struct {
 	writer  *lumberjack.Logger
 	buffer  *bufio.Writer
-	logCh   chan string
+	logCh   chan *dnslog.Dnslog
 	closeCh chan struct{}
 }
 
@@ -24,7 +30,7 @@ func New(filename string, maxsize, fileCount, fileAge int) *LogHandler {
 			Compress:   true,
 		},
 		closeCh: make(chan struct{}),
-		logCh:   make(chan string, 100),
+		logCh:   make(chan *dnslog.Dnslog, 100),
 	}
 	h.buffer = bufio.NewWriterSize(h.writer, 1024*8)
 
@@ -34,32 +40,37 @@ func New(filename string, maxsize, fileCount, fileAge int) *LogHandler {
 
 func (h *LogHandler) loop() {
 	for {
-		l, ok := <-h.logCh
-		if !ok {
+		select {
+		case l, ok := <-h.logCh:
+			if !ok {
+				h.buffer.Flush()
+				h.closeCh <- struct{}{}
+				logger.Infof("log handler exiting")
+				return
+			}
+			h.handle(l)
+		case <-time.After(batchWriteTimeout):
 			h.buffer.Flush()
-			h.closeCh <- struct{}{}
-			return
 		}
-		h.handle(l)
 	}
 }
 
-func (h *LogHandler) Handle(s string) {
-	h.logCh <- s
+func (h *LogHandler) Handle(dl *dnslog.Dnslog) {
+	h.logCh <- dl
 }
 
-func (h *LogHandler) handle(s string) {
-	if _, err := h.buffer.WriteString(s); err != nil {
-		logger.Get().Errorf("write file %s failed %s", h.writer.Filename, err)
+func (h *LogHandler) handle(dl *dnslog.Dnslog) {
+	if _, err := h.buffer.WriteString(dl.String()); err != nil {
+		logger.Panicf("write file %s failed %s", h.writer.Filename, err)
 	}
 
 	if _, err := h.buffer.WriteString("\n"); err != nil {
-		logger.Get().Errorf("write file %s failed %s", h.writer.Filename, err)
+		logger.Panicf("write file %s failed %s", h.writer.Filename, err)
 	}
 
-	if h.buffer.Available() < 4096 {
+	if h.buffer.Available() < 2048 {
 		if err := h.buffer.Flush(); err != nil {
-			logger.Get().Errorf("write file %s failed %s", h.writer.Filename, err)
+			logger.Panicf("write file %s failed %s", h.writer.Filename, err)
 		}
 	}
 }

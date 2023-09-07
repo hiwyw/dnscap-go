@@ -67,9 +67,8 @@ func (a *Analyzer) taskLoop() {
 		dl, ok := <-a.taskCh
 		if !ok {
 			a.out()
-			logger.Get().Infof("task channel closed, exitting")
 			a.closeCh <- struct{}{}
-			close(a.closeCh)
+			logger.Infof("analyze handleer exitting")
 			return
 		}
 		a.analyze(dl)
@@ -95,23 +94,27 @@ func (a *Analyzer) analyze(dl *dnslog.Dnslog) {
 }
 
 func (a *Analyzer) out() {
+	if !a.begin {
+		return
+	}
+
 	a.result.BeginTime = a.endTime.Local().Add(-a.interval)
 	a.result.EndTime = a.endTime
 	b := a.result.Json()
 
 	if _, err := a.outLogger.Write([]byte("######################################\n")); err != nil {
-		logger.Get().Errorf("write file %s failed %s", a.outLogger.Filename)
+		logger.Errorf("write file %s failed %s", a.outLogger.Filename)
 	}
 
 	if _, err := a.outLogger.Write(b); err != nil {
-		logger.Get().Errorf("write file %s failed %s", a.outLogger.Filename)
+		logger.Errorf("write file %s failed %s", a.outLogger.Filename)
 	}
 
 	if _, err := a.outLogger.Write([]byte("\n")); err != nil {
-		logger.Get().Errorf("write file %s failed %s", a.outLogger.Filename)
+		logger.Errorf("write file %s failed %s", a.outLogger.Filename)
 	}
 
-	logger.Get().Infof("output analyze result succeed")
+	logger.Infof("output analyze result succeed")
 	a.result = NewResult(a.interval, a.ips, a.domains)
 }
 

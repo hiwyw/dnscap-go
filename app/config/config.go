@@ -51,8 +51,7 @@ func Generate(fp string) {
 			"192.168.134.200",
 			"192.168.135.200",
 		},
-		WorkerCount:        1,
-		SessionCacheSize:   20000,
+		SessionCacheSize:   100000,
 		DnslogEnable:       true,
 		DnslogFilename:     "dns.log",
 		DnslogMaxsize:      50,
@@ -68,9 +67,8 @@ func Generate(fp string) {
 		AnalyzeDomains: []string{
 			"www.test.com.",
 		},
-		RunLogFilename: "run.log",
-		PprofEnable:    false,
-		PprofHttpPort:  8000,
+		PprofEnable:   false,
+		PprofHttpPort: 8000,
 	}
 
 	content, err := yaml.Marshal(c)
@@ -98,7 +96,6 @@ type Config struct {
 	FilterIps          []string        `yaml:"filter_ips"`
 	OutputDir          string          `yaml:"output_dir"`
 	SelfIps            []string        `yaml:"self_ips"`
-	WorkerCount        int             `yaml:"worker_count"`
 	SessionCacheSize   int             `yaml:"session_cache_size"`
 	DnslogEnable       bool            `yaml:"dnslog_enable"`
 	DnslogFilename     string          `yaml:"dnslog_filename"`
@@ -110,7 +107,6 @@ type Config struct {
 	AnalyzeInterval    string          `yaml:"analyze_interval"`
 	AnalyzeIps         []string        `yaml:"analyze_querycount_ips"`
 	AnalyzeDomains     []string        `yaml:"analyze_querycount_domains"`
-	RunLogFilename     string          `yaml:"run_log_filename"`
 	PprofEnable        bool            `yaml:"pprof_enable"`
 	PprofHttpPort      int             `yaml:"pprof_http_port"`
 }

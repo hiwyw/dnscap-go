@@ -3,6 +3,7 @@ package qpshandler
 import (
 	"time"
 
+	"github.com/hiwyw/dnscap-go/app/dnslog"
 	"github.com/hiwyw/dnscap-go/app/logger"
 )
 
@@ -33,19 +34,19 @@ func (q *QpsHandler) loop() {
 		select {
 		case _, ok := <-q.ch:
 			if !ok {
-				logger.Get().Infof("task channel closed, exitting")
 				q.closeCh <- struct{}{}
+				logger.Infof("qps handler exitting")
 				return
 			}
 			q.queryCount++
 		case <-q.ticker.C:
-			logger.Get().Infof("average packet resolve peer second %d", q.queryCount/5)
+			logger.Infof("average packet resolve peer second %d", q.queryCount/5)
 			q.queryCount = 0
 		}
 	}
 }
 
-func (q *QpsHandler) Handle() {
+func (q *QpsHandler) Handle(dl *dnslog.Dnslog) {
 	q.ch <- struct{}{}
 }
 

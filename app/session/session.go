@@ -6,48 +6,29 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 )
 
-const (
-	slabNumber uint16 = 8
-)
-
 func New(size int) *SessionCache {
-	s := &SessionCache{
-		cache: []*lru.Cache{},
-	}
+	lruc, _ := lru.New(size)
 
-	for i := 0; i < (int)(slabNumber); i++ {
-		lc, _ := lru.New(size)
-		s.cache = append(s.cache, lc)
+	return &SessionCache{
+		c: lruc,
 	}
-	return s
 }
 
 type SessionCache struct {
-	cache []*lru.Cache
+	c *lru.Cache
 }
 
 func (s *SessionCache) Add(k SessionKey, v SessionValue) (evicted bool) {
-	evicted = s.cache[k.TransID&(slabNumber-1)].Add(k, v)
+	evicted = s.c.Add(k, v)
 	return
 }
 
 func (s *SessionCache) Delete(k SessionKey) {
-	s.cache[k.TransID&(slabNumber-1)].Remove(k)
-}
-
-func (s *SessionCache) FindWithRetry(k SessionKey, retries int) (SessionValue, bool) {
-	for i := 0; i < retries; i++ {
-		v, ok := s.Find(k)
-		if ok {
-			return v, ok
-		}
-		<-time.After(time.Millisecond)
-	}
-	return SessionValue{}, false
+	s.c.Remove(k)
 }
 
 func (s *SessionCache) Find(k SessionKey) (SessionValue, bool) {
-	v, ok := s.cache[k.TransID&(slabNumber-1)].Peek(k)
+	v, ok := s.c.Peek(k)
 	if !ok {
 		return SessionValue{}, false
 	}

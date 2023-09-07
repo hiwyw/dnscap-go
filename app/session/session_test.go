@@ -89,7 +89,7 @@ func TestSessionWithEvict(t *testing.T) {
 		TransID: 45678,
 	}
 
-	log.Printf("current cache count %d", sc.cache[45678&(slabNumber-1)].Len())
+	log.Printf("current cache count %d", sc.c.Len())
 
 	sc.Add(queryKey3, queryValue)
 }

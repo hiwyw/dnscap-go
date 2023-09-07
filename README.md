@@ -14,8 +14,7 @@ output_dir: ./dnscap_result #
 self_ips: # dns服务器自身ip列表，用于判断报文是客户端侧报文还是服务端自身出向递归报文
   - 192.168.134.200
   - 192.168.135.200
-worker_count: 1 # 数据包解析工作线程数，可通过修改此数值提升处理性能
-session_cache_size: 20000 # 请求会话缓存大小，底层实现根据transid进行了缓存分区，配置为每个分区缓存的大小，保持默认即可
+session_cache_size: 100000 # 请求会话缓存大小，底层实现根据transid进行了缓存分区，配置为每个分区缓存的大小，保持默认即可
 dnslog_enable: true # 是否输出dns日志
 dnslog_filename: dns.log # 输出的dns日志文件名称
 dnslog_maxsize: 50 # 输出的dns日志文件大小，单位MB
@@ -29,7 +28,6 @@ analyze_querycount_ips: # 统计特定ip的列表，可输出指定ip的请求�
   - 192.168.134.202
 analyze_querycount_domains: # 统计特定域名的列表，可输出指定域名的请求、响应数、延时分布信息
   - www.test.com.
-run_log_filename: run.log # 程序自身运行日志文件名称
 pprof_enable: false # 程序性能分析开关，保持默认关闭即可
 pprof_http_port: 8000 # 程序性能分析http服务端口，默认即可
 ```
@@ -148,6 +146,13 @@ pprof_http_port: 8000 # 程序性能分析http服务端口，默认即可
 ```
 
 ## 使用方式
+### 运行程序
 ```bash
 ./dnscap-go -config config.yaml
+```
+
+### 查看系统当前网卡信息
+主要用于windows环境下使用，windows网卡名称为特定串码，无法直观查看
+```bash
+./dnscap-go -devices
 ```

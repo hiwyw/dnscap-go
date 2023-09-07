@@ -33,7 +33,9 @@ func WithSignalEx(parent context.Context, cb func()) context.Context {
 				cb()
 			}
 			cancel()
+			return
 		case <-ctx.Done():
+			return
 		}
 	}()
 

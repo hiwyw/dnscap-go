@@ -85,7 +85,7 @@ func (r *Result) countDomain(dl *dnslog.Dnslog) {
 func (r *Result) Json() []byte {
 	b, err := json.MarshalIndent(r, "", "    ")
 	if err != nil {
-		logger.Get().Errorf("analyze result marshal to json failed %s", err)
+		logger.Errorf("analyze result marshal to json failed %s", err)
 		return nil
 	}
 	return b
