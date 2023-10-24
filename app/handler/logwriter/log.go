@@ -1,11 +1,11 @@
-package loghandler
+package logwriter
 
 import (
 	"bufio"
 	"time"
 
-	"github.com/hiwyw/dnscap-go/app/dnslog"
 	"github.com/hiwyw/dnscap-go/app/logger"
+	"github.com/hiwyw/dnscap-go/app/types"
 	"github.com/natefinch/lumberjack"
 )
 
@@ -16,7 +16,7 @@ const (
 type LogHandler struct {
 	writer  *lumberjack.Logger
 	buffer  *bufio.Writer
-	logCh   chan *dnslog.Dnslog
+	logCh   chan *types.Dnslog
 	closeCh chan struct{}
 }
 
@@ -30,7 +30,7 @@ func New(filename string, maxsize, fileCount, fileAge int) *LogHandler {
 			Compress:   true,
 		},
 		closeCh: make(chan struct{}),
-		logCh:   make(chan *dnslog.Dnslog, 100),
+		logCh:   make(chan *types.Dnslog, 100),
 	}
 	h.buffer = bufio.NewWriterSize(h.writer, 1024*8)
 
@@ -55,11 +55,11 @@ func (h *LogHandler) loop() {
 	}
 }
 
-func (h *LogHandler) Handle(dl *dnslog.Dnslog) {
+func (h *LogHandler) Handle(dl *types.Dnslog) {
 	h.logCh <- dl
 }
 
-func (h *LogHandler) handle(dl *dnslog.Dnslog) {
+func (h *LogHandler) handle(dl *types.Dnslog) {
 	if _, err := h.buffer.WriteString(dl.String()); err != nil {
 		logger.Panicf("write file %s failed %s", h.writer.Filename, err)
 	}

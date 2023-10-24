@@ -1,10 +1,10 @@
-package qpshandler
+package qpswriter
 
 import (
 	"time"
 
-	"github.com/hiwyw/dnscap-go/app/dnslog"
 	"github.com/hiwyw/dnscap-go/app/logger"
+	"github.com/hiwyw/dnscap-go/app/types"
 )
 
 const (
@@ -46,7 +46,7 @@ func (q *QpsHandler) loop() {
 	}
 }
 
-func (q *QpsHandler) Handle(dl *dnslog.Dnslog) {
+func (q *QpsHandler) Handle(dl *types.Dnslog) {
 	q.ch <- struct{}{}
 }
 

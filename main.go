@@ -20,8 +20,8 @@ var (
 	showDevices  bool
 
 	configFile   string
-	buildTime    string = "2023-09-07"
-	buildVersion string = "v0.1.3"
+	buildTime    string = "2023-10-24"
+	buildVersion string = "v0.1.4"
 )
 
 func main() {

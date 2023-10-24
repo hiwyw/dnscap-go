@@ -1,10 +1,10 @@
-package analyzehandler
+package analyzer
 
 import (
 	"time"
 
-	"github.com/hiwyw/dnscap-go/app/dnslog"
 	"github.com/hiwyw/dnscap-go/app/logger"
+	"github.com/hiwyw/dnscap-go/app/types"
 	"github.com/natefinch/lumberjack"
 )
 
@@ -20,7 +20,7 @@ func New(filename string, interval time.Duration, ips, domains, selfIps []string
 
 	a := &Analyzer{
 		selfIps: ipsMap,
-		taskCh:  make(chan *dnslog.Dnslog, taskChannelBuffer),
+		taskCh:  make(chan *types.Dnslog, taskChannelBuffer),
 		outLogger: &lumberjack.Logger{
 			Filename:   filename,
 			MaxSize:    50,
@@ -47,13 +47,13 @@ type Analyzer struct {
 	ips       []string
 	domains   []string
 	interval  time.Duration
-	taskCh    chan *dnslog.Dnslog
+	taskCh    chan *types.Dnslog
 	outLogger *lumberjack.Logger
 	result    *Result
 	closeCh   chan struct{}
 }
 
-func (a *Analyzer) Handle(dl *dnslog.Dnslog) {
+func (a *Analyzer) Handle(dl *types.Dnslog) {
 	a.taskCh <- dl
 }
 
@@ -75,7 +75,7 @@ func (a *Analyzer) taskLoop() {
 	}
 }
 
-func (a *Analyzer) analyze(dl *dnslog.Dnslog) {
+func (a *Analyzer) analyze(dl *types.Dnslog) {
 	if !a.begin {
 		a.endTime = dl.PacketTime.Add(a.interval)
 		a.begin = true
@@ -118,7 +118,7 @@ func (a *Analyzer) out() {
 	a.result = NewResult(a.interval, a.ips, a.domains)
 }
 
-func (a *Analyzer) isRecursion(dl *dnslog.Dnslog) bool {
+func (a *Analyzer) isRecursion(dl *types.Dnslog) bool {
 	_, ok := a.selfIps[dl.SrcIP.String()]
 	return ok && dl.DstPort == 53
 }

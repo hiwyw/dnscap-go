@@ -1,11 +1,11 @@
-package analyzehandler
+package analyzer
 
 import (
 	"encoding/json"
 	"time"
 
-	"github.com/hiwyw/dnscap-go/app/dnslog"
 	"github.com/hiwyw/dnscap-go/app/logger"
+	"github.com/hiwyw/dnscap-go/app/types"
 )
 
 const (
@@ -45,7 +45,7 @@ type Result struct {
 	SpecialDomainCounts map[string]*CountResult `json:"special_domains"`
 }
 
-func (r *Result) count(dl *dnslog.Dnslog, isRecurseion bool) {
+func (r *Result) count(dl *types.Dnslog, isRecurseion bool) {
 	if isRecurseion {
 		r.RecursionCount.count(dl)
 	} else {
@@ -55,7 +55,7 @@ func (r *Result) count(dl *dnslog.Dnslog, isRecurseion bool) {
 	r.countIp(dl)
 }
 
-func (r *Result) countIp(dl *dnslog.Dnslog) {
+func (r *Result) countIp(dl *types.Dnslog) {
 	if len(r.SpecialIpCounts) == 0 {
 		return
 	}
@@ -71,7 +71,7 @@ func (r *Result) countIp(dl *dnslog.Dnslog) {
 	}
 }
 
-func (r *Result) countDomain(dl *dnslog.Dnslog) {
+func (r *Result) countDomain(dl *types.Dnslog) {
 	if len(r.SpecialDomainCounts) == 0 {
 		return
 	}
@@ -120,7 +120,7 @@ type CountResult struct {
 	QueryTypeCount map[string]int `json:"qtype_statistics,omitempty"`
 }
 
-func (c *CountResult) count(dl *dnslog.Dnslog) {
+func (c *CountResult) count(dl *types.Dnslog) {
 	if dl.Response {
 		c.ResponseCount++
 		c.countDelay(dl.ResolvDuration)

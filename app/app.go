@@ -15,13 +15,13 @@ import (
 	"github.com/miekg/dns"
 
 	"github.com/hiwyw/dnscap-go/app/config"
-	"github.com/hiwyw/dnscap-go/app/dnslog"
 	"github.com/hiwyw/dnscap-go/app/handler"
-	"github.com/hiwyw/dnscap-go/app/handler/analyzehandler"
-	"github.com/hiwyw/dnscap-go/app/handler/loghandler"
-	"github.com/hiwyw/dnscap-go/app/handler/qpshandler"
+	"github.com/hiwyw/dnscap-go/app/handler/analyzer"
+	"github.com/hiwyw/dnscap-go/app/handler/logwriter"
+	"github.com/hiwyw/dnscap-go/app/handler/qpswriter"
 	"github.com/hiwyw/dnscap-go/app/logger"
 	"github.com/hiwyw/dnscap-go/app/session"
+	"github.com/hiwyw/dnscap-go/app/types"
 )
 
 const (
@@ -41,7 +41,7 @@ func New(cfg *config.Config) *App {
 	}
 
 	if cfg.DnslogEnable {
-		h := loghandler.New(
+		h := logwriter.New(
 			path.Join(cfg.OutputDir, cfg.DnslogFilename),
 			cfg.DnslogMaxsize,
 			cfg.DnslogCount,
@@ -50,7 +50,7 @@ func New(cfg *config.Config) *App {
 	}
 
 	if cfg.AnalyzeEnable {
-		h := analyzehandler.New(
+		h := analyzer.New(
 			path.Join(cfg.OutputDir, cfg.AnalyzeOutFilename),
 			cfg.GetAnalyeInterval(),
 			cfg.AnalyzeIps,
@@ -59,7 +59,7 @@ func New(cfg *config.Config) *App {
 		a.handlers = append(a.handlers, h)
 	}
 
-	a.handlers = append(a.handlers, qpshandler.New())
+	a.handlers = append(a.handlers, qpswriter.New())
 
 	if cfg.PprofEnable {
 		go pprof(cfg.PprofHttpPort)
@@ -177,8 +177,8 @@ func (a *App) handleP(p gopacket.Packet) {
 	}
 }
 
-func unpack(p gopacket.Packet) (*dnslog.Dnslog, error) {
-	dl := &dnslog.Dnslog{}
+func unpack(p gopacket.Packet) (*types.Dnslog, error) {
+	dl := &types.Dnslog{}
 	if p.Metadata() == nil {
 		return nil, fmt.Errorf("packet metadata missing")
 	}
@@ -221,7 +221,7 @@ func unpack(p gopacket.Packet) (*dnslog.Dnslog, error) {
 		return dl, fmt.Errorf("packet unpack to dns msg failed %s", err)
 	}
 
-	dnslog.FromMsg(msg, dl)
+	types.DnslogFromMsg(msg, dl)
 	return dl, nil
 }
 
@@ -243,7 +243,7 @@ func getBpfFilterString(ips []net.IP) string {
 	return s
 }
 
-func (a *App) add2Session(dl *dnslog.Dnslog) {
+func (a *App) add2Session(dl *types.Dnslog) {
 	k := session.SessionKey{
 		SrcIP:   dl.SrcIP.String(),
 		DstIP:   dl.DstIP.String(),
@@ -262,7 +262,7 @@ func (a *App) add2Session(dl *dnslog.Dnslog) {
 	}
 }
 
-func (a *App) matchSession(dl *dnslog.Dnslog) error {
+func (a *App) matchSession(dl *types.Dnslog) error {
 	k := session.SessionKey{
 		SrcIP:   dl.DstIP.String(),
 		DstIP:   dl.SrcIP.String(),

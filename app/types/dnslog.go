@@ -1,4 +1,4 @@
-package dnslog
+package types
 
 import (
 	"net"
@@ -9,7 +9,7 @@ import (
 	"github.com/miekg/dns"
 )
 
-func FromMsg(msg *dns.Msg, dl *Dnslog) {
+func DnslogFromMsg(msg *dns.Msg, dl *Dnslog) {
 	dl.TransID = msg.Id
 
 	if len(msg.Question) > 0 {

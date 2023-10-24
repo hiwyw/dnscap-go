@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"github.com/hiwyw/dnscap-go/app/dnslog"
+	"github.com/hiwyw/dnscap-go/app/types"
 )
 
 type Handler interface {
-	Handle(dl *dnslog.Dnslog)
+	Handle(dl *types.Dnslog)
 	Stop()
 }
